@@ -166,6 +166,18 @@ Not to be called directly. Instantiated via the connection factory
 
 Returns C<true>.
 
+=head1 BUGS AND LIMITAITIONS
+
+=over 8
+
+=item * Missing support for the C<tls_priority> URL query parameter
+
+=item * Missing support for the C<no_verify> URL query parameter
+
+=item * No verification of the server parameters
+
+=back
+
 =head1 SEE ALSO
 
 L<LibVirt|https://libvirt.org>, L<Sys::Virt>
