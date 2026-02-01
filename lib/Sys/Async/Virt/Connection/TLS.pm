@@ -1,14 +1,3 @@
-####################################################################
-#
-#     This file was generated using XDR::Parse version v1.0.1
-#                   and LibVirt version v12.0.0
-#
-#      Don't edit this file, use the source template instead
-#
-#                 ANY CHANGES HERE WILL BE LOST !
-#
-####################################################################
-
 
 use v5.26;
 use warnings;
@@ -16,16 +5,24 @@ use experimental 'signatures';
 use Future::AsyncAwait;
 use Object::Pad ':experimental(inherit_field)';
 
-class Sys::Async::Virt::Connection::TLS v0.4.0;
+class Sys::Async::Virt::Connection::TLS;
 
-inherit Sys::Async::Virt::Connection::TCP '$_in', '$_out', '$_socket', '$_url';
+inherit Sys::Async::Virt::Connection::TCP '$_socket', '$_url';
 
 use Carp qw(croak);
 use Future::IO::TLS;
 use Log::Any qw($log);
 
+use Crypt::OpenSSL3::SSL;
+use Crypt::OpenSSL3::SSL::Context;
 use Protocol::Sys::Virt::URI; # imports parse_url
 
+field $_tls              = undef;
+field $_need_tls_confirm = 1;
+
+method _default_port() {
+    return 16514;
+}
 
 async method connect() {
     # disect URL
@@ -61,10 +58,46 @@ async method connect() {
         $clientkey  = '/etc/pki/libvirt/clientkey.pem';
     }
 
-    my $tls = await Future::IO::start_TLS( $_socket );
-    $_socket = $tls;
-    $_in = $tls;
-    $_out = $tls;
+    my $ctx = Crypt::OpenSSL3::SSL::Context->new;
+    $ctx->load_verify_file( $cacert );;
+    $ctx->use_PrivateKey_file( $clientkey, Crypt::OpenSSL3::SSL::FILETYPE_PEM );
+    $ctx->use_certificate_file( $clientcert, Crypt::OpenSSL3::SSL::FILETYPE_PEM );
+
+    $_tls = await Future::IO::TLS->start_TLS(
+        $_socket,
+        hostname => $components{host},
+        context  => $ctx,
+        );
+}
+
+async method _read_internal( $len ) {
+    # Once we can have transitive inheritance, we can
+    # add the first-byte verification to $_read_f in
+    # connect().
+    if ($_need_tls_confirm) {
+        $_need_tls_confirm = 0;
+        my $buf = await $_tls->read( $_socket, 1 );
+        croak 'Server failed TLS verification'
+            if $buf ne "\1";
+    }
+    my $data = '';
+    my $read = '';
+    do {
+        $read = await $_tls->read( $_socket, $len );
+        $data .= $read;
+        $len -= length($read);
+    } while ($read and $len > 0);
+    return $data;
+}
+
+async method _write_internal( $data ) {
+    my $len = length($data);
+    my $idx = 0;
+    while ($len > 0) {
+        my $written = await $_tls->write( $_socket, substr( $data, $idx ) );
+        $idx += $written;
+        $len -= $written;
+    }
 }
 
 method is_secure() {
@@ -79,10 +112,6 @@ __END__
 =head1 NAME
 
 Sys::Async::Virt::Connection::TLS - Connection to LibVirt server over TLS sockets
-
-=head1 VERSION
-
-v0.4.0
 
 =head1 SYNOPSIS
 

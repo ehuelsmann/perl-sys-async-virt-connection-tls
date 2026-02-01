@@ -5,4 +5,4 @@ requires 'Future::IO::TLS';
 requires 'Log::Any';
 requires 'Object::Pad';
 requires 'Protocol::Sys::Virt::URI';
-requires 'Sys::Async::Virt::Connection::TCP' => 'v0.4.0';
+requires 'Sys::Async::Virt::Connection::TCP' => 'v0.5.2';
