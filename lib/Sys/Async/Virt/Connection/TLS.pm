@@ -5,7 +5,7 @@ use experimental 'signatures';
 use Future::AsyncAwait;
 use Object::Pad ':experimental(inherit_field)';
 
-class Sys::Async::Virt::Connection::TLS v0.0.2;
+class Sys::Async::Virt::Connection::TLS v0.0.3;
 
 inherit Sys::Async::Virt::Connection::TCP '$_socket', '$_url';
 
@@ -82,7 +82,7 @@ async method _read_internal( $len ) {
     }
     my $data = '';
     do {
-        $read = await $_tls->read( $_socket, $len );
+        my $read = await $_tls->read( $_socket, $len );
         unless (defined $read) {
             return ($data ? $data : undef);
         }
@@ -116,7 +116,7 @@ Sys::Async::Virt::Connection::TLS - Connection to LibVirt server over TLS socket
 
 =head1 VERSION
 
-v0.0.2
+v0.0.3
 
 =head1 SYNOPSIS
 
