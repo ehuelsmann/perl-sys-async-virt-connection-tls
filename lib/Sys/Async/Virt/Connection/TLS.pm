@@ -181,7 +181,7 @@ Returns C<true>.
 
 =item * No verification of the server parameters
 
-=item * No support for L<https://libvirt.org/kbase/tlscerts.html#multiple-parallel-certificate-identities|multiple parallel certificates>
+=item * No support for L<multiple parallel certificates|https://libvirt.org/kbase/tlscerts.html#multiple-parallel-certificate-identities>
 
 =back
 
