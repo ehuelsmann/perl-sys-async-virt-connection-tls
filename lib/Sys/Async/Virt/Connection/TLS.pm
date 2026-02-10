@@ -81,12 +81,13 @@ async method _read_internal( $len ) {
             if $buf ne "\1";
     }
     my $data = '';
-    my $read = '';
     do {
         $read = await $_tls->read( $_socket, $len );
-        $data .= $read;
+        unless (defined $read) {
+            return ($data ? $data : undef);
+        }
         $len -= length($read);
-    } while ($read and $len > 0);
+    } while ($len > 0);
     return $data;
 }
 
